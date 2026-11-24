@@ -1,0 +1,13 @@
+{
+ "version": "demo-0.1",
+ "status": "demo",
+ "feature_set": "wb",
+ "note": "Демонстрационная шкала: коэффициенты заданы вручную по смыслу (ниже EI и a* — бледнее), на людях не проверена. Заменяется файлом из tools/train_model.py.",
+ "features": [
+  {"name": "EI_p50", "mean": 0.25, "std": 0.08, "coef": -1.2},
+  {"name": "a_p50", "mean": 20.0, "std": 6.0, "coef": -0.8}
+ ],
+ "intercept": 0.0,
+ "thresholds": {"low": 0.35, "high": 0.65},
+ "metrics": null
+}

@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' blob: data:; media-src 'self' blob: mediastream:; style-src 'self'; script-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#7a1f2b">
+<meta name="description" content="Офлайн-скрининг риска анемии по фото века. Не диагноз.">
+<title>HemaVision Lite</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+<link rel="stylesheet" href="styles/app.css">
+<link rel="stylesheet" href="styles/print.css" media="print">
+<script type="module" src="app.js"></script>
+</head>
+<body>
+<main id="app">
+
+<!-- 0. Старт -->
+<section class="screen" data-screen="start">
+  <div class="topbar"><span></span><button class="lang" id="lang-btn" type="button">RU | KZ</button></div>
+  <div class="logo"><img src="assets/icons/icon-192.png" alt="" width="96" height="96"></div>
+  <h1 data-i18n="start.title"></h1>
+  <p class="center" data-i18n="start.subtitle"></p>
+  <ul class="ticks">
+    <li data-i18n="start.point1"></li>
+    <li data-i18n="start.point2"></li>
+    <li data-i18n="start.point3"></li>
+  </ul>
+  <p class="warn"><b>⚠</b> <span data-i18n="start.warning"></span></p>
+  <div class="grow"></div>
+  <button class="btn pri" data-go="survey" type="button" data-i18n="start.btn_start"></button>
+  <div class="row">
+    <button class="btn" data-go="history" type="button" data-i18n="start.btn_history"></button>
+    <button class="btn" data-go="about" type="button" data-i18n="start.btn_about"></button>
+  </div>
+  <p class="note gray" id="install-hint" hidden></p>
+  <p class="note ok-badge" id="offline-ready" hidden data-i18n="start.offline_ready"></p>
+  <footer data-i18n="common.footer"></footer>
+</section>
+
+<!-- 0б. Согласие -->
+<section class="screen" data-screen="consent" hidden>
+  <h1 data-i18n="consent.title"></h1>
+  <p data-i18n="consent.text1"></p>
+  <p data-i18n="consent.text2"></p>
+  <p data-i18n="consent.text3"></p>
+  <label class="chk"><input type="checkbox" id="consent-chk"> <span data-i18n="consent.checkbox"></span></label>
+  <div class="grow"></div>
+  <button class="btn pri" id="consent-btn" type="button" disabled data-i18n="consent.btn"></button>
+  <footer data-i18n="common.footer"></footer>
+</section>
+
+<!-- 1. Опрос -->
+<section class="screen" data-screen="survey" hidden>
+  <div class="topbar"><button class="link" data-go="start" type="button" data-i18n="common.back"></button><span>1 / 4</span></div>
+  <h2 data-i18n="survey.title"></h2>
+  <p class="small" data-i18n="survey.hint"></p>
+  <div class="row top">
+    <label class="col"><span class="small" data-i18n="survey.age"></span>
+      <input id="age" type="number" inputmode="numeric" min="0" max="120" autocomplete="off"></label>
+    <div class="col"><span class="small" data-i18n="survey.sex"></span>
+      <div class="seg" data-q="sex">
+        <button type="button" data-v="f" data-i18n="survey.sex_f"></button>
+        <button type="button" data-v="m" data-i18n="survey.sex_m"></button>
+      </div></div>
+  </div>
+  <p class="err" id="age-err" hidden data-i18n="survey.err_age"></p>
+  <div id="questions"></div>
+  <div id="survey-notes"></div>
+  <div class="red" id="redflag" hidden>
+    <b data-i18n="survey.redflag_title"></b>
+    <p id="redflag-text"></p>
+  </div>
+  <div class="grow"></div>
+  <button class="btn pri" id="survey-next" type="button" data-i18n="survey.btn"></button>
+</section>
+
+<!-- 1б. Отказ до 5 лет -->
+<section class="screen" data-screen="refuse" hidden>
+  <div class="topbar"><button class="link" data-go="survey" type="button" data-i18n="common.back"></button><span></span></div>
+  <div class="big-icon">👶</div>
+  <h2 class="center" data-i18n="survey.refuse_u5_title"></h2>
+  <p data-i18n="survey.refuse_u5_text"></p>
+  <div class="grow"></div>
+  <button class="btn" data-go="start" type="button" data-i18n="common.home"></button>
+</section>
+
+<!-- 2а. Как снимать -->
+<section class="screen" data-screen="howto" hidden>
+  <div class="topbar"><button class="link" data-go="survey" type="button" data-i18n="common.back"></button><span>2 / 4</span></div>
+  <h2 data-i18n="cam.howto_title"></h2>
+  <div class="step"><img src="assets/howto/light.svg" alt=""><p data-i18n="cam.howto_1"></p></div>
+  <div class="step"><img src="assets/howto/lid.svg" alt=""><p data-i18n="cam.howto_2"></p></div>
+  <div class="step"><img src="assets/howto/oval.svg" alt=""><p data-i18n="cam.howto_3"></p></div>
+  <p class="small" data-i18n="cam.howto_helper"></p>
+  <div class="grow"></div>
+  <button class="btn pri" id="open-camera" type="button" data-i18n="cam.howto_btn"></button>
+  <label class="btn file"><span data-i18n="cam.btn_upload"></span><input type="file" accept="image/*" class="upload" hidden></label>
+  <p class="small center" data-i18n="cam.upload_tip"></p>
+</section>
+
+<!-- 2. Камера -->
+<section class="screen cam" data-screen="camera" hidden>
+  <div class="viewer">
+    <video id="video" playsinline muted autoplay></video>
+    <div class="guide"></div>
+    <p class="hint-bubble" id="cam-hint"></p>
+  </div>
+  <div class="pad">
+    <div class="ind" id="ind-light"><span class="dot"></span><span></span></div>
+    <div class="ind" id="ind-sharp"><span class="dot"></span><span></span></div>
+    <div class="ind" id="ind-lid"><span class="dot"></span><span></span></div>
+    <p class="err" id="cam-err" hidden></p>
+    <div class="grow"></div>
+    <button class="btn pri" id="shoot" type="button" disabled></button>
+    <button class="link center" id="shoot-anyway" type="button" hidden data-i18n="cam.shoot_anyway"></button>
+    <div class="row">
+      <label class="btn file"><span data-i18n="cam.btn_upload"></span><input type="file" accept="image/*" class="upload" hidden></label>
+      <button class="btn" id="cam-back" type="button" data-i18n="common.back"></button>
+    </div>
+  </div>
+</section>
+
+<!-- 3. Отметка тканей -->
+<section class="screen" data-screen="roi" hidden>
+  <div class="topbar"><button class="link" id="roi-retake" type="button" data-i18n="common.retake"></button><span>3 / 4</span></div>
+  <h2 data-i18n="roi.title"></h2>
+  <div class="roi-wrap">
+    <canvas id="roi-photo"></canvas>
+    <canvas id="roi-draw"></canvas>
+  </div>
+  <div class="seg modes">
+    <button type="button" id="mode-lid" class="on" data-i18n="roi.mode_lid"></button>
+    <button type="button" id="mode-sclera" data-i18n="roi.mode_sclera"></button>
+  </div>
+  <p id="roi-step"></p>
+  <p class="small" data-i18n="roi.tip_avoid"></p>
+  <p class="small" data-i18n="roi.tip_zoom"></p>
+  <p class="err" id="roi-err" hidden></p>
+  <div class="row">
+    <button class="btn" id="roi-undo" type="button" data-i18n="roi.btn_undo"></button>
+    <button class="btn" id="roi-reset" type="button" data-i18n="roi.btn_reset"></button>
+  </div>
+  <button class="btn pri" id="roi-done" type="button" data-i18n="roi.btn_done"></button>
+  <details class="small"><summary data-i18n="roi.why_title"></summary><p data-i18n="roi.why"></p></details>
+</section>
+
+<!-- 4. Результат -->
+<section class="screen" data-screen="result" hidden>
+  <div class="topbar"><button class="link" data-go="roi" type="button" data-i18n="common.back"></button><span>4 / 4</span></div>
+  <p class="center small" data-i18n="res.label"></p>
+  <div class="zone" id="zone">
+    <div class="zone-name" id="zone-name"></div>
+    <div class="bar" id="zone-bar"><i class="g"></i><i class="y"></i><i class="r"></i></div>
+    <div class="bar-labels" id="zone-labels"><span data-i18n="res.zone_low_s"></span><span data-i18n="res.zone_mid_s"></span><span data-i18n="res.zone_high_s"></span></div>
+  </div>
+  <div id="res-redflag" class="red" hidden></div>
+  <div id="res-advice"></div>
+  <div id="res-details">
+    <h3 data-i18n="res.why_title"></h3>
+    <p id="res-why"></p>
+    <p class="small" id="res-indices"></p>
+    <p class="small" data-i18n="res.indices_hint"></p>
+    <p id="res-quality"></p>
+    <div class="gray" id="res-symptoms"></div>
+    <div id="res-notes"></div>
+    <p class="small" id="res-model"></p>
+  </div>
+  <div class="grow"></div>
+  <div id="res-actions">
+    <button class="btn pri" id="to-report" type="button" data-i18n="res.btn_report"></button>
+    <label class="chk small"><input type="checkbox" id="save-photo"> <span data-i18n="res.save_photo"></span></label>
+    <div class="row">
+      <button class="btn" id="res-retake" type="button" data-i18n="res.btn_retake"></button>
+      <button class="btn" id="res-save" type="button" data-i18n="res.btn_save"></button>
+    </div>
+  </div>
+  <div id="res-na-actions" hidden>
+    <button class="btn pri" id="na-retake" type="button" data-i18n="common.retake"></button>
+    <button class="btn" data-go="start" type="button" data-i18n="common.home"></button>
+  </div>
+  <footer data-i18n="common.footer"></footer>
+</section>
+
+<!-- 5. Отчёт для врача -->
+<section class="screen" data-screen="report" hidden>
+  <div class="topbar noprint"><button class="link" data-go="result" type="button" data-i18n="common.back"></button><span></span></div>
+  <article class="report" id="report"></article>
+  <button class="btn pri noprint" id="print" type="button" data-i18n="rep.btn_print"></button>
+  <p class="small center noprint" data-i18n="rep.print_hint"></p>
+</section>
+
+<!-- 6. История -->
+<section class="screen" data-screen="history" hidden>
+  <div class="topbar"><button class="link" data-go="start" type="button" data-i18n="common.back"></button><span></span></div>
+  <h2 data-i18n="hist.title"></h2>
+  <div id="hist-chart"></div>
+  <p class="small" data-i18n="hist.chart_note"></p>
+  <div id="hist-list" class="list"></div>
+  <p id="hist-empty" class="small" hidden data-i18n="hist.empty"></p>
+  <div class="grow"></div>
+  <button class="btn danger" id="hist-delete" type="button" data-i18n="hist.btn_delete_all"></button>
+  <p class="small center" data-i18n="hist.local_only"></p>
+</section>
+
+<!-- Как это работает -->
+<section class="screen" data-screen="about" hidden>
+  <div class="topbar"><button class="link" data-go="start" type="button" data-i18n="common.back"></button><span></span></div>
+  <h2 data-i18n="about.title"></h2>
+  <p data-i18n="about.p1"></p>
+  <p data-i18n="about.p2"></p>
+  <p data-i18n="about.p3"></p>
+  <h3 data-i18n="about.limits_title"></h3>
+  <ul>
+    <li data-i18n="about.limit1"></li>
+    <li data-i18n="about.limit2"></li>
+    <li data-i18n="about.limit3"></li>
+    <li data-i18n="about.limit4"></li>
+  </ul>
+  <h3 data-i18n="about.sources"></h3>
+  <p class="small" data-i18n="about.sources_text"></p>
+  <p class="small" id="about-version"></p>
+</section>
+
+<!-- Модальное подтверждение (вместо системного confirm) -->
+<div class="modal" id="modal" hidden>
+  <div class="modal-box">
+    <p id="modal-text"></p>
+    <div class="row">
+      <button class="btn" id="modal-no" type="button" data-i18n="common.cancel"></button>
+      <button class="btn danger" id="modal-yes" type="button" data-i18n="common.delete"></button>
+    </div>
+  </div>
+</div>
+
+<canvas id="work" hidden></canvas>
+</main>
+</body>
+</html>

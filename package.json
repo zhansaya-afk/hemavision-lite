@@ -1,0 +1,9 @@
+{
+  "name": "hemavision-lite",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Офлайн-PWA: скрининг риска анемии по фото века. Не диагноз.",
+  "scripts": { "test": "node --test" },
+  "license": "MIT"
+}

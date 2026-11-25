@@ -10,11 +10,12 @@ const KK_LETTERS = /[әғқңөұүһі]/;
 
 /** Красные флаги в свободном тексте (рус./каз.). */
 export const RED_FLAG_PATTERNS = [
-  /бол[иья]\S* в груди|грудь бол|давит в груди|кеуде\S* ауыр|кеудем ауыр/,
-  /обморок|потерял\S* сознани|теряю сознани|есін\S* тан|есінен тан/,
+  /бол[иья]\S* в груди|грудь бол|давит в груди|кеуде\S* ауыр|кеудем ауыр|кеуде тұс|жүрег\S* шанш|жүрек тұс/,
+  /обморок|потерял\S* сознани|теряю сознани|есін\S* тан|есінен тан|есім\S* айырыл/,
+  /рвота с кровью|кровав\S* рвот|құсығ\S* қан|қан құс/,
   /ч[её]рн\S* стул|кровь в стуле|кровь в кале|қара нәжіс|нәжісте қан/,
   /сильн\S* кровотечени|кровотечени\S* не останавлива|кровь не останавлива|қан тоқтамай|көп қан кет/,
-  /одышка в покое|задыхаюсь|не могу дышать|тыныс ала алмай/,
+  /одышка в покое|задыхаюсь|не могу дышать|тыныс ала алмай|тыныс\S* тарыл/,
   /беремен\S*.*кровотечени|кровотечени\S*.*беремен|жүкті\S*.*қан кет/,
 ];
 
@@ -27,6 +28,17 @@ export const STOPWORDS = new Set((
   'және мен сен сіз ол біз олар бұл осы сол не неге қалай қайда қашан қандай ма ме ба бе па пе бола болады ' +
   'керек ме ғой да де мен менің сенің оның маған саған бар жоқ'
 ).split(' '));
+
+/** Мысли о самоубийстве или самоповреждении — отдельный ответ с поддержкой и телефонами помощи. */
+export const CRISIS_PATTERNS = [
+  /не хочу жить|покончить с собой|суицид|убить себя|покончу с собой|жить не хочется|нет смысла жить|порезать себя/,
+  /өмір сүргім келмейді|өзімді өлтір|өмірдің мәні жоқ|өзіме қол жұмса|суицид/,
+];
+
+export function isCrisis(text) {
+  const s = normalize(text);
+  return CRISIS_PATTERNS.some((re) => re.test(s));
+}
 
 export function normalize(text) {
   return String(text || '')
@@ -131,6 +143,7 @@ export const THRESHOLD = 0.22;
  */
 export function answer(indexes, question, ctx = {}) {
   const first = answerIn(indexes, question, ctx, detectLang(question, ctx.lang || 'ru'));
+  if (first.type === 'crisis' || first.type === 'urgent') return first;
   if (first.type !== 'fallback' || !normalize(question)) return first;
   // казахский вопрос без особых букв («балама 4 жас») — пробуем другую базу
   const other = first.lang === 'ru' ? 'kk' : 'ru';
@@ -143,6 +156,7 @@ function answerIn(indexes, question, ctx, lang) {
   const idx = indexes[lang] || indexes.ru;
   const kb = idx.kb;
   if (!normalize(question)) return { type: 'fallback', lang, text: kb.fallback, suggestions: [] };
+  if (isCrisis(question)) return { type: 'crisis', lang, text: kb.crisis, suggestions: [] };
   if (isUrgent(question)) return { type: 'urgent', lang, text: kb.urgent, suggestions: ['cbc'] };
   const hits = search(idx, question);
   const top = hits[0];

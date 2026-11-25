@@ -30,7 +30,8 @@ test('в базе нет названий препаратов и доз', () =>
 });
 
 test('красные флаги в вопросе → срочный совет раньше поиска', () => {
-  for (const q of ['болит в груди', 'вчера был обморок', 'черный стул третий день', 'кеудем ауырады', 'есінен тандым', 'беременна и началось кровотечение']) {
+  for (const q of ['болит в груди', 'вчера был обморок', 'черный стул третий день', 'кеудем ауырады', 'есінен тандым', 'беременна и началось кровотечение',
+    'жүрегім шаншиды', 'кеуде тұсым ауырады', 'есімнен айырылдым', 'құсығымда қан бар', 'тынысым тарылып жатыр']) {
     assert.ok(isUrgent(q), q);
     assert.equal(got(q), 'URGENT', q);
   }
@@ -75,4 +76,13 @@ test('личный план учитывает симптомы, месячны�
   assert.ok(p.includes('plan.cbc_low_symptoms') && p.includes('plan.periods') && p.includes('plan.no_pills'));
   assert.ok(personalPlan('mid', evaluateSurvey({ ...base, pregnant: 'yes' }), base).includes('plan.pregnant'));
   assert.ok(personalPlan('mid', evaluateSurvey({ ...base, age: 15 }), base).includes('plan.teen'));
+});
+
+test('мысли о самоубийстве → поддержка и телефоны помощи, не поиск по базе', () => {
+  for (const q of ['не хочу жить', 'думаю покончить с собой', 'өмір сүргім келмейді', 'өмірдің мәні жоқ']) {
+    const r = answer(idx, q, { lang: 'ru' });
+    assert.equal(r.type, 'crisis', q);
+    assert.match(r.text, /150/);
+  }
+  assert.equal(answer(idx, 'өмір сүргім келмейді', { lang: 'ru' }).lang, 'kk');
 });

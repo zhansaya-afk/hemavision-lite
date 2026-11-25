@@ -11,7 +11,7 @@ import { renderReport } from './src/report.js';
 import { addRecord, listRecords, clearRecords } from './src/store.js';
 import { buildIndex, answer, personalPlan } from './src/assistant.js';
 
-export const APP_VERSION = '1.1.2';
+export const APP_VERSION = '1.1.3';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
@@ -492,7 +492,7 @@ function ask(text) {
   if (r.type === 'topic') {
     addMsg('bot', r.text, '', t('asst.understood', { title: topicTitle(r.id, r.lang) }));
   } else {
-    addMsg('bot', r.text, r.type === 'urgent' ? 'urgent' : '');
+    addMsg('bot', r.text, r.type === 'urgent' || r.type === 'crisis' ? 'urgent' : '');
   }
   const more = (r.suggestions || []).filter((id) => id !== r.id).slice(0, 3);
   renderChips(more.length ? more : QUICK, r.lang);

@@ -11,7 +11,7 @@ import { renderReport } from './src/report.js';
 import { addRecord, listRecords, clearRecords } from './src/store.js';
 import { buildIndex, answer, personalPlan } from './src/assistant.js';
 
-export const APP_VERSION = '1.1.3';
+export const APP_VERSION = '1.1.4';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];

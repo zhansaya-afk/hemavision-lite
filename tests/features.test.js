@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { tissueMask, countMask, extractFeatures, whiteBalance } from '../src/features.js';
+import { tissueMask, countMask, extractFeatures, whiteBalance, scleraRef } from '../src/features.js';
 
 const gold = JSON.parse(readFileSync(new URL('./golden.json', import.meta.url)));
 const { width, height } = gold.image;
@@ -15,7 +15,7 @@ const tolOf = (k) => (/^(L|a|b)_/.test(k) ? 0.2 : k === 'hue_p50' ? 0.05 : 1e-3)
 
 test('маска ткани: блики и ресницы убраны, число пикселей как в Python', () => {
   assert.equal(countMask(tissueMask(img, lid)), E.tissue_lid_px);
-  assert.equal(countMask(tissueMask(img, sclera)), E.tissue_sclera_px);
+  assert.equal(countMask(scleraRef(img, sclera)), E.sclera_ref_px);
 });
 
 test('признаки века (сырые и после баланса по склере) совпадают с Python', () => {
@@ -27,7 +27,7 @@ test('признаки века (сырые и после баланса по с
 });
 
 test('баланс белого по склере делает склеру нейтральной', () => {
-  const st = tissueMask(img, sclera);
+  const st = scleraRef(img, sclera);
   const wb = whiteBalance(img, st);
   const f = extractFeatures(wb, lid, sclera);
   close(f.sclera.a_p50, 0, 1.0, 'a* склеры');

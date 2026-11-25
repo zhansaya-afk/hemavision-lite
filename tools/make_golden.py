@@ -59,9 +59,16 @@ def main():
     rgb = u8.astype(np.float32) / 255
     keys = ['EI_p50', 'L_p50', 'a_p50', 'b_p50', 'hue_p50', 'HHR', 'n_px']
     raw = C.roi_features(rgb, lid)
-    sc_t = C.tissue_mask(rgb, sclera)
+    v = rgb.max(-1)
+    t = sclera & (v > 0.08) & (v < 0.985)               # склера: без теней и пересвеченных каналов
+    lin = C.srgb_to_lin(np.clip(rgb, 0, 1))
+    score = (lin / (np.median(lin[t], axis=0) + 1e-6)).sum(-1)
+    sc_t = t & (score >= np.percentile(score[t], 60))   # опорные пиксели склеры: светлые 40 % ткани
     wb = C.roi_features(C.white_balance_by(rgb, sc_t), lid)
-    rel = C.relative_features(rgb, lid, sclera)
+    # отношения «веко/склера»: веко — tissue_mask, склера — опорные пиксели sc_t (как src/features.js)
+    lin_c = C.srgb_to_lin(np.clip(rgb, 1 / 255, 1))
+    q = (np.median(lin_c[C.tissue_mask(rgb, lid)], axis=0) + 1e-6) / (np.median(lin_c[sc_t], axis=0) + 1e-6)
+    rel = {'rel_lRG': float(np.log(q[0] / q[1])), 'rel_lRB': float(np.log(q[0] / q[2]))}
     gold = {
         'source': 'anemia/color.py (предыдущее исследование команды), OpenCV ' + __import__('cv2').__version__,
         'tolerance': {'default': 1e-3, 'lab': 0.2},
@@ -70,7 +77,8 @@ def main():
                   'lid': lid.reshape(-1).astype(int).tolist(), 'sclera': sclera.reshape(-1).astype(int).tolist()},
         'expected': {
             'tissue_lid_px': int(C.tissue_mask(rgb, lid).sum()),
-            'tissue_sclera_px': int(sc_t.sum()),
+            'tissue_sclera_px': int(t.sum()),
+            'sclera_ref_px': int(sc_t.sum()),
             'raw': pick(raw, keys), 'wb': pick(wb, keys),
             'rel': {k: float(rel[k]) for k in ('rel_lRG', 'rel_lRB')},
         },

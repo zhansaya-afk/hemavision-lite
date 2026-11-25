@@ -55,6 +55,43 @@ export function tissueMask(img, mask, minPx = MIN_TISSUE_PX) {
   return out;
 }
 
+/**
+ * Опорные пиксели склеры: пиксели отметки без теней и пересвета, и из них — самые светлые 40 %.
+ * Касание редко попадает точно в белок: край круга задевает кожу, радужку, веко. Склера — самая
+ * светлая ткань в кадре, поэтому её берём по яркости, а кожу и радужку отбрасываем.
+ */
+export const SCLERA_BRIGHT_P = 60;
+export const SCLERA_CLIP_V = 0.985;
+
+export function scleraRef(img, sclera) {
+  // склера светлая и бесцветная, как блик, поэтому фильтр бликов века здесь не годится:
+  // убираем только тёмное (ресницы, тени) и пересвеченные каналы (настоящий блик)
+  const t = new Uint8Array(sclera.length);
+  for (let i = 0; i < t.length; i++) {
+    if (!sclera[i]) continue;
+    const r = img.rgb[3 * i], g = img.rgb[3 * i + 1], b = img.rgb[3 * i + 2];
+    const v = Math.max(r, g, b);
+    if (v > 0.08 && v < SCLERA_CLIP_V) t[i] = 1;
+  }
+  if (countMask(t) < MIN_TISSUE_PX) return t;
+  // яркость в линейном RGB, нормированная на медиану каждого канала по отметке:
+  // множитель источника света по каналам сокращается, поэтому выбор пикселей от цвета света не зависит
+  const med = linMedian(img, t, 0).map((x) => x + 1e-6);
+  const score = new Float32Array(t.length);
+  const vals = [];
+  for (let i = 0; i < t.length; i++) {
+    if (!t[i]) continue;
+    let sc = 0;
+    for (let c = 0; c < 3; c++) sc += srgbToLin(Math.min(1, Math.max(0, img.rgb[3 * i + c]))) / med[c];
+    score[i] = sc;
+    vals.push(sc);
+  }
+  const thr = percentile(vals, SCLERA_BRIGHT_P);
+  const out = new Uint8Array(t.length);
+  for (let i = 0; i < t.length; i++) if (t[i] && score[i] >= thr) out[i] = 1;
+  return out;
+}
+
 /** Медиана каждого канала линейного RGB по маске (пиксели обрезаются снизу до 1/255). */
 function linMedian(img, mask, clipLow) {
   const ch = [[], [], []];
@@ -82,8 +119,8 @@ export function whiteBalance(img, refMask) {
 }
 
 /** Признаки цвета области (медианы по чистым пикселям ткани). null — мало ткани. */
-export function roiFeatures(img, mask) {
-  const m = tissueMask(img, mask);
+export function roiFeatures(img, mask, { clean = false } = {}) {
+  const m = clean ? mask : tissueMask(img, mask);
   const n = countMask(m);
   if (n < MIN_TISSUE_PX) return null;
   const EI = [], L = [], A = [], B = [], hue = [];
@@ -112,7 +149,7 @@ export function roiFeatures(img, mask) {
 
 /** Цвет века относительно склеры того же снимка: множитель источника света сокращается в линейном RGB. */
 export function relativeFeatures(img, lid, sclera) {
-  const mc = tissueMask(img, lid), ms = tissueMask(img, sclera);
+  const mc = tissueMask(img, lid), ms = scleraRef(img, sclera);   // ms уже очищена
   if (countMask(mc) < MIN_TISSUE_PX || countMask(ms) < MIN_TISSUE_PX) return null;
   const c = linMedian(img, mc, 1 / 255).map((x) => x + 1e-6);
   const s = linMedian(img, ms, 1 / 255).map((x) => x + 1e-6);
@@ -125,10 +162,10 @@ export function relativeFeatures(img, lid, sclera) {
  * отношения «веко/склера» и цвет склеры (для проверки цветного света).
  */
 export function extractFeatures(img, lid, sclera) {
-  const scleraTissue = tissueMask(img, sclera);
+  const scleraTissue = scleraRef(img, sclera);
   const scleraN = countMask(scleraTissue);
   const raw = roiFeatures(img, lid);
-  const sclera_ = scleraN >= MIN_TISSUE_PX ? roiFeatures(img, sclera) : null;
+  const sclera_ = scleraN >= MIN_TISSUE_PX ? roiFeatures(img, scleraTissue, { clean: true }) : null;
   const wb = scleraN >= MIN_TISSUE_PX ? roiFeatures(whiteBalance(img, scleraTissue), lid) : null;
   const rel = relativeFeatures(img, lid, sclera);
   return { raw, wb, rel, sclera: sclera_ };

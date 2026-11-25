@@ -13,6 +13,7 @@ export const Q = {
   redShare: 0.10,     // доля розовых пикселей в рамке ниже — «оттяните веко»
   scleraColorB: 15,   // |b*| склеры выше — цветной свет
   scleraDarkL: 35,    // L* склеры ниже — склера в тени
+  scleraMissL: 70,    // L* ниже и цветная — отметка не на белке (кожа, радужка)
   lidMinPx: 300,      // мало ткани века — «отметьте шире»
   glareShare: 0.30,   // доля бликов внутри отметки века
 };
@@ -93,7 +94,10 @@ export function roiCheck(img, lid, sclera, features) {
   const sc = features && features.sclera;
   if (!sc) reasons.push('roi.err_sclera');
   else {
+    const chroma = Math.hypot(sc.a_p50, sc.b_p50);
     if (sc.L_p50 < Q.scleraDarkL) reasons.push('roi.err_sclera_dark');
+    // тусклое и цветное — скорее кожа или радужка, чем склера при цветном свете
+    else if (sc.L_p50 < Q.scleraMissL && chroma > Q.scleraColorB) reasons.push('roi.err_sclera_miss');
     else if (Math.abs(sc.b_p50) > Q.scleraColorB) reasons.push('cam.light_color');
   }
   if (!features || !features.wb) {

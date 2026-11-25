@@ -51,3 +51,36 @@ test('рамка маски', () => {
   const m = new Uint8Array(25); m[6] = 1; m[18] = 1;
   assert.deepEqual(maskBBox(m, 5), [1, 1, 4, 4]);
 });
+
+function eye(w, h, scleraRGB) {
+  // склера сверху, кожа слева, веко снизу
+  const rgb = new Float32Array(w * h * 3);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const c = x < 12 ? [196, 150, 125] : y < 20 ? scleraRGB : y > 26 ? [205, 105, 105] : [90, 60, 50];
+    c.forEach((v, k) => { rgb[3 * (y * w + x) + k] = (v + ((x * 7 + y * 3) % 5)) / 255; });
+  }
+  return { rgb, width: w, height: h };
+}
+const rect = (w, h, x0, y0, x1, y1) => { const m = new Uint8Array(w * h); for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) m[y * w + x] = 1; return m; };
+
+test('касание склеры с краем на коже — не «цветной свет»', () => {
+  const img = eye(48, 40, [236, 232, 226]);
+  const lid = rect(48, 40, 14, 28, 46, 38), sc = rect(48, 40, 4, 4, 30, 18);   // треть отметки на коже
+  const r = roiCheck(img, lid, sc, extractFeatures(img, lid, sc));
+  assert.ok(!r.reasons.includes('cam.light_color'), r.reasons.join());
+  assert.ok(r.ok, r.reasons.join());
+});
+
+test('отметка целиком на коже → «не на белке», а не «цветной свет»', () => {
+  const img = eye(48, 40, [236, 232, 226]);
+  const lid = rect(48, 40, 14, 28, 46, 38), sc = rect(48, 40, 0, 4, 11, 18);
+  const r = roiCheck(img, lid, sc, extractFeatures(img, lid, sc));
+  assert.deepEqual(r.reasons, ['roi.err_sclera_miss']);
+});
+
+test('настоящий жёлтый свет на всей склере → «цветной свет»', () => {
+  const img = eye(48, 40, [240, 215, 140]);
+  const lid = rect(48, 40, 14, 28, 46, 38), sc = rect(48, 40, 14, 4, 40, 18);
+  const r = roiCheck(img, lid, sc, extractFeatures(img, lid, sc));
+  assert.ok(r.reasons.includes('cam.light_color'), r.reasons.join());
+});

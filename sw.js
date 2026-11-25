@@ -1,7 +1,7 @@
 // Service worker: при установке кладёт все файлы приложения в кэш, дальше отвечает из кэша.
 // После первой загрузки приложение работает в режиме полёта. Никаких запросов на сторонние адреса.
 
-const VERSION = 'hv-lite-1.1.0';
+const VERSION = 'hv-lite-1.1.1';
 const FILES = [
   './', 'index.html', 'app.js', 'manifest.webmanifest',
   'src/color.js', 'src/features.js', 'src/quality.js', 'src/risk.js', 'src/personalizer.js',

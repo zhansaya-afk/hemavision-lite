@@ -1,6 +1,6 @@
 // HemaVision Lite: экраны, состояние сеанса, связь модулей. Всё считается на телефоне, сети нет.
 
-import { loadI18n, t, applyI18n, setLang, getLang, num } from './src/i18n.js';
+import { loadI18n, t, tIn, applyI18n, setLang, getLang, num } from './src/i18n.js';
 import { evaluateSurvey, advice, asksFemaleQuestions, validAge, SYMPTOMS, RED_FLAGS } from './src/personalizer.js';
 import { startCamera, stopCamera, checkFrame, capture, loadFile } from './src/camera.js';
 import { createRoi } from './src/roi.js';
@@ -9,6 +9,7 @@ import { roiCheck, sharpnessGrade, maskBBox, toGray } from './src/quality.js';
 import { assess, validateModel } from './src/risk.js';
 import { renderReport } from './src/report.js';
 import { addRecord, listRecords, clearRecords } from './src/store.js';
+import { buildIndex, answer, personalPlan } from './src/assistant.js';
 
 export const APP_VERSION = '1.0.0';
 
@@ -22,6 +23,8 @@ const state = {
   photo: document.createElement('canvas'),
   roi: null,
   result: null,
+  kb: null,
+  chat: [],
 };
 
 /* ---------- навигация ---------- */
@@ -29,12 +32,15 @@ const state = {
 let current = 'start';
 let liveTimer = null;
 
+let beforeAssistant = 'start';
+
 function show(name) {
   if (current === 'camera' && name !== 'camera') { clearInterval(liveTimer); stopCamera(); }
+  if (name === 'assistant' && current !== 'assistant') beforeAssistant = current;
   current = name;
   for (const s of $$('.screen')) s.hidden = s.dataset.screen !== name;
   window.scrollTo(0, 0);
-  const enter = { survey: renderSurvey, camera: enterCamera, history: renderHistory };
+  const enter = { survey: renderSurvey, camera: enterCamera, history: renderHistory, assistant: enterAssistant };
   if (enter[name]) enter[name]();
 }
 
@@ -288,6 +294,14 @@ function renderResult() {
     }
   }
 
+  const plan = $('#plan-list');
+  plan.replaceChildren(...personalPlan(z, ev, state.survey).map((k) => {
+    const li = document.createElement('li');
+    li.textContent = t(k);
+    if (k === 'plan.urgent') li.className = 'urgent';
+    return li;
+  }));
+
   const na = z === 'na';
   $('#res-details').hidden = na;
   $('#res-actions').hidden = na;
@@ -421,6 +435,83 @@ $('#hist-delete').addEventListener('click', async () => {
   renderHistory();
 });
 
+/* ---------- ассистент (AI Personalizer) ---------- */
+
+const QUICK = ['my_result', 'cbc', 'iron_food', 'is_diagnosis'];
+
+function topicTitle(id, lang = getLang()) {
+  const kb = state.kb[lang] || state.kb.ru;
+  const tp = kb.kb.topics.find((x) => x.id === id);
+  return tp ? tp.title : id;
+}
+
+/** Ответ на «что значит мой результат» из последнего результата и опроса этого сеанса. */
+function resultExplanation(_id, lang) {
+  const tt = (k, v) => tIn(lang, k, v);
+  if (!state.result) return tt('asst.result_none');
+  const z = state.result.assess.zone;
+  let s = tt(`asst.result_${z}`);
+  const ev = state.surveyEval;
+  if (ev && ev.symptoms.length) s += ' ' + tt('asst.result_sym', { list: ev.symptoms.map((k) => tt(`survey.sym_${k}`)).join(', ') });
+  return s;
+}
+
+function addMsg(who, text, cls = '', meta = '') {
+  state.chat.push({ who, text, cls, meta });
+  renderChat();
+}
+
+function renderChat() {
+  const box = $('#chat');
+  box.replaceChildren(...state.chat.map((m) => {
+    const d = document.createElement('div');
+    d.className = `msg ${m.who} ${m.cls}`;
+    if (m.meta) { const s = document.createElement('span'); s.className = 'meta'; s.textContent = m.meta; d.append(s); }
+    d.append(document.createTextNode(m.text));
+    return d;
+  }));
+  box.lastElementChild && box.lastElementChild.scrollIntoView({ block: 'end', behavior: 'smooth' });
+}
+
+function renderChips(ids, lang = getLang()) {
+  const box = $('#chips');
+  box.replaceChildren(...ids.map((id) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = topicTitle(id, lang);
+    b.addEventListener('click', () => ask(topicTitle(id, lang)));
+    return b;
+  }));
+}
+
+function ask(text) {
+  const q = text.trim();
+  if (!q) return;
+  addMsg('me', q);
+  const r = answer(state.kb, q, { lang: getLang(), dynamic: resultExplanation });
+  if (r.type === 'topic') {
+    addMsg('bot', r.text, '', t('asst.understood', { title: topicTitle(r.id, r.lang) }));
+  } else {
+    addMsg('bot', r.text, r.type === 'urgent' ? 'urgent' : '');
+  }
+  const more = (r.suggestions || []).filter((id) => id !== r.id).slice(0, 3);
+  renderChips(more.length ? more : QUICK, r.lang);
+}
+
+function enterAssistant() {
+  $('#asst-disclaimer').textContent = (state.kb[getLang()] || state.kb.ru).kb.disclaimer;
+  $('#asst-input').placeholder = t('asst.placeholder');
+  if (!state.chat.length) addMsg('bot', t('asst.hello'));
+  else renderChat();
+  renderChips(state.result ? QUICK : QUICK.filter((id) => id !== 'my_result'));
+}
+
+$('#asst-send').addEventListener('click', () => { const i = $('#asst-input'); ask(i.value); i.value = ''; });
+$('#asst-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); ask(e.target.value); e.target.value = ''; }
+});
+$('#asst-back').addEventListener('click', () => show(beforeAssistant));
+
 /* ---------- язык, установка, офлайн ---------- */
 
 $('#lang-btn').addEventListener('click', () => {
@@ -429,6 +520,7 @@ $('#lang-btn').addEventListener('click', () => {
   if (current === 'survey') renderSurvey();
   if (current === 'result') renderResult();
   if (current === 'history') renderHistory();
+  if (current === 'assistant') enterAssistant();
 });
 
 function installHint() {
@@ -454,6 +546,8 @@ async function registerSW() {
 async function main() {
   await loadI18n();
   setLang(getLang());
+  const kbs = await Promise.all(['ru', 'kk'].map((l) => fetch(`kb/${l}.json`).then((x) => x.json())));
+  state.kb = { ru: buildIndex(kbs[0]), kk: buildIndex(kbs[1]) };
   const r = await fetch('model/model.json');
   state.model = await r.json();
   const errs = validateModel(state.model);

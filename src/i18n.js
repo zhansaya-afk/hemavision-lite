@@ -28,7 +28,12 @@ export function setLang(l) {
 
 /** Текст по ключу с подстановкой {x}. */
 export function t(key, vars = {}) {
-  const s = (dict[lang] && dict[lang][key]) || (dict.ru && dict.ru[key]) || key;
+  return tIn(lang, key, vars);
+}
+
+/** Текст на заданном языке (ответ ассистента на языке вопроса). */
+export function tIn(l, key, vars = {}) {
+  const s = (dict[l] && dict[l][key]) || (dict.ru && dict.ru[key]) || key;
   return s.replace(/\{(\w+)\}/g, (_, k) => (k in vars ? String(vars[k]) : `{${k}}`));
 }
 

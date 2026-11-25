@@ -155,3 +155,20 @@ details { margin: 8px 0; }
 .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
 .modal[hidden] { display: none; }
 .modal-box { background: var(--bg); border-radius: 14px; padding: 16px; max-width: 398px; width: 100%; }
+
+/* Личный план и ассистент */
+.plan { border: 1.5px solid var(--line); border-radius: 12px; padding: 4px 12px 8px; margin: 8px 0; }
+.plan ol { margin: 4px 0 6px; padding-left: 20px; }
+.plan li { margin: 5px 0; font-size: 15px; }
+.plan li.urgent { color: var(--high); font-weight: 650; }
+.chat { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; flex: 1 1 auto; }
+.msg { max-width: 88%; padding: 9px 12px; border-radius: 14px; font-size: 15px; white-space: pre-line; }
+.msg.bot { background: var(--gray-bg); align-self: flex-start; border-bottom-left-radius: 4px; }
+.msg.me { background: var(--brand); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+.msg.urgent { background: var(--red-bg); border: 1.5px solid var(--high); }
+.msg .meta { display: block; font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.chips button { border: 1.5px solid var(--brand); color: var(--brand); background: var(--bg); border-radius: 16px; padding: 6px 11px; font: inherit; font-size: 13.5px; cursor: pointer; }
+.ask { display: flex; gap: 8px; align-items: center; position: sticky; bottom: 0; background: var(--bg); padding: 8px 0 max(4px, env(safe-area-inset-bottom)); }
+.ask input { flex: 1; min-width: 0; font: inherit; min-height: 48px; padding: 8px 12px; border: 1.5px solid #9a9aa0; border-radius: 12px; }
+.ask .btn { width: auto; margin: 0; flex: none; padding: 10px 12px; }

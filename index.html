@@ -36,6 +36,7 @@
     <button class="btn" data-go="history" type="button" data-i18n="start.btn_history"></button>
     <button class="btn" data-go="about" type="button" data-i18n="start.btn_about"></button>
   </div>
+  <button class="btn" data-go="assistant" type="button" data-i18n="start.btn_assistant"></button>
   <p class="note gray" id="install-hint" hidden></p>
   <p class="note ok-badge" id="offline-ready" hidden data-i18n="start.offline_ready"></p>
   <footer data-i18n="common.footer"></footer>
@@ -159,6 +160,11 @@
   </div>
   <div id="res-redflag" class="red" hidden></div>
   <div id="res-advice"></div>
+  <div class="plan" id="res-plan">
+    <h3 data-i18n="plan.title"></h3>
+    <ol id="plan-list"></ol>
+    <button class="btn" data-go="assistant" type="button" data-i18n="asst.btn"></button>
+  </div>
   <div id="res-details">
     <h3 data-i18n="res.why_title"></h3>
     <p id="res-why"></p>
@@ -204,6 +210,19 @@
   <div class="grow"></div>
   <button class="btn danger" id="hist-delete" type="button" data-i18n="hist.btn_delete_all"></button>
   <p class="small center" data-i18n="hist.local_only"></p>
+</section>
+
+<!-- Ассистент (AI Personalizer) -->
+<section class="screen" data-screen="assistant" hidden>
+  <div class="topbar"><button class="link" id="asst-back" type="button" data-i18n="common.back"></button><span></span></div>
+  <h2 data-i18n="asst.title"></h2>
+  <p class="small" id="asst-disclaimer"></p>
+  <div class="chat" id="chat" aria-live="polite"></div>
+  <div class="chips" id="chips"></div>
+  <div class="ask">
+    <input id="asst-input" type="text" autocomplete="off" enterkeyhint="send">
+    <button class="btn pri" id="asst-send" type="button" data-i18n="asst.send"></button>
+  </div>
 </section>
 
 <!-- Как это работает -->

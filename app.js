@@ -11,7 +11,7 @@ import { renderReport } from './src/report.js';
 import { addRecord, listRecords, clearRecords } from './src/store.js';
 import { buildIndex, answer, personalPlan } from './src/assistant.js';
 
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.1.2';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
@@ -534,8 +534,15 @@ function installHint() {
 
 async function registerSW() {
   if (!('serviceWorker' in navigator)) return;
+  // новая версия приложения взяла управление → один раз перезагрузить страницу, чтобы показать её
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadController && !reloaded && current === 'start') { reloaded = true; window.location.reload(); }
+  });
   try {
-    await navigator.serviceWorker.register('sw.js');
+    const reg = await navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' });
+    reg.update().catch(() => {});
     await navigator.serviceWorker.ready;
     $('#offline-ready').hidden = false;
   } catch { /* без service worker приложение работает, но не офлайн */ }
@@ -553,6 +560,7 @@ async function main() {
   const errs = validateModel(state.model);
   if (errs.length) throw new Error(`model.json: ${errs.join('; ')}`);
   $('#about-version').textContent = `HemaVision Lite ${APP_VERSION} · ${t('about.model')}: ${state.model.version}`;
+  $('#start-version').textContent = `v${APP_VERSION}`;
   installHint();
   show('start');
   registerSW();

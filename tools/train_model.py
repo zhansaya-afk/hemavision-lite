@@ -4,9 +4,9 @@
 и сводных метрик, в репозиторий не попадает: фото и признаки пациентов остаются в Colab.
 
 Вход: CSV-манифест набора Eyes-defy-anemia (одна строка — снимок):
-    image, mask_conj, hb_g_l, anemic, group, population, [fold]
+    image, mask_conj, hb_g_l, anemic, group, patient_id, [fold]
     пути image/mask_conj — относительно --data; anemic — 1/0 по нормам ВОЗ с учётом пола и возраста;
-    group — пациент (и копии его снимков); population — страна; fold — готовые фолды (иначе считаем сами).
+    group — пациент (и копии его снимков); страна — из patient_id (ED_<страна>_<id>); fold — готовые фолды (иначе считаем сами).
 
 Признаки (те же формулы, что src/features.js, проверка — tests/golden.json):
     медианы EI, a*, L* и HHR по пикселям ткани внутри маски конъюнктивы (врачебной разметки набора).
@@ -92,6 +92,13 @@ def load_mask(path, shape):
     return m > 127
 
 
+def country_of(r):
+    """Страна из patient_id (ED_<страна>_<id>); колонка population — возрастная группа, не страна."""
+    pid = str(getattr(r, 'patient_id', '') or '')
+    parts = pid.split('_')
+    return parts[1] if len(parts) >= 3 and parts[0] == 'ED' else 'не указана'
+
+
 def build_table(manifest, data):
     rows = []
     for r in manifest.itertuples():
@@ -104,7 +111,7 @@ def build_table(manifest, data):
         f = features(rgb, mask) if mask is not None else None
         if f is None:
             continue
-        rows.append({**f, 'anemic': int(r.anemic), 'group': str(r.group), 'population': str(r.population),
+        rows.append({**f, 'anemic': int(r.anemic), 'group': str(r.group), 'country': country_of(r),
                      'fold': int(r.fold) if 'fold' in manifest.columns and pd.notna(r.fold) else -1})
     return pd.DataFrame(rows)
 
@@ -247,8 +254,8 @@ def main():
         zone[te] = np.where(p[te] < lo, 'low', np.where(p[te] >= hi, 'high', 'mid'))
 
     blocks = [block('Все (OOF)', y, p, zone, g)]
-    for c in sorted(df.population.unique()):
-        s = (df.population == c).to_numpy()
+    for c in sorted(df.country.unique()):
+        s = (df.country == c).to_numpy()
         blocks.append(block(f'Только {c}', y[s], p[s], zone[s], g[s]))
     base = max(y.mean(), 1 - y.mean())
 
@@ -257,9 +264,10 @@ def main():
     model = {
         'version': f'logreg-{date.today().isoformat()}',
         'status': 'trained',
-        'feature_set': 'wb',
-        'note': 'Логистическая регрессия на Eyes-defy-anemia (макронасадка, LED). В приложении признаки считаются '
-                'после баланса белого по склере. На смартфоне точность не измерена.',
+        'feature_set': 'raw',  # признаки обучения — без баланса белого (в наборе нет отметки склеры)
+        'note': ('Логистическая регрессия на Eyes-defy-anemia (макронасадка, LED). Признаки века считаются без баланса '
+                 'белого (как при обучении: в наборе нет отметки склеры); склера в приложении — только проверка цветного '
+                 'света. На смартфоне точность не измерена.'),
         'features': [{'name': n, 'mean': float(final['mean'][i]), 'std': float(final['std'][i]),
                       'coef': float(final['coef'][i])} for i, n in enumerate(FEATURES)],
         'intercept': final['intercept'],

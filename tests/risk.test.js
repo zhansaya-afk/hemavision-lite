@@ -24,7 +24,8 @@ test('границы зон', () => {
 });
 
 test('бледнее (ниже EI и a*) → риск выше', () => {
-  const pale = { EI_p50: 0.1, a_p50: 8 }, pink = { EI_p50: 0.4, a_p50: 32 };
+  const same = { L_p50: 60, HHR: 0.2 };
+  const pale = { EI_p50: 0.1, a_p50: 8, ...same }, pink = { EI_p50: 0.4, a_p50: 32, ...same };
   assert.ok(probability(model, pale) > probability(model, pink));
 });
 
@@ -43,4 +44,13 @@ test('нет признака → na без вероятности', () => {
 
 test('битая модель ловится', () => {
   assert.ok(validateModel({ status: 'x', features: [{ name: 'a', mean: 0, std: 0, coef: 1 }], thresholds: { low: 0.7, high: 0.3 } }).length >= 3);
+});
+
+test('шкала берёт тот набор признаков, на котором обучена (feature_set)', () => {
+  const f = { EI_p50: 0.15, a_p50: 25, L_p50: 60, HHR: 0.16 };
+  const ok = { ok: true, reasons: [] };
+  const r = assess(model, { [model.feature_set]: f }, ok);
+  assert.notEqual(r.zone, 'na');
+  const other = model.feature_set === 'raw' ? 'wb' : 'raw';
+  assert.equal(assess(model, { [other]: f }, ok).zone, 'na');
 });

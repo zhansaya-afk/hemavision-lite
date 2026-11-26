@@ -172,3 +172,5 @@ details { margin: 8px 0; }
 .ask { display: flex; gap: 8px; align-items: center; position: sticky; bottom: 0; background: var(--bg); padding: 8px 0 max(4px, env(safe-area-inset-bottom)); }
 .ask input { flex: 1; min-width: 0; font: inherit; min-height: 48px; padding: 8px 12px; border: 1.5px solid #9a9aa0; border-radius: 12px; }
 .ask .btn { width: auto; margin: 0; flex: none; padding: 10px 12px; }
+.roi-guide img { display: block; width: 100%; max-width: 380px; height: auto; margin: 6px auto; border-radius: 10px; }
+.roi-guide p { margin: 4px 0; }

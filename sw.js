@@ -1,7 +1,7 @@
 // Service worker: при установке кладёт все файлы приложения в кэш, дальше отвечает из кэша.
 // После первой загрузки приложение работает в режиме полёта. Никаких запросов на сторонние адреса.
 
-const VERSION = 'hv-lite-1.2.0';
+const VERSION = 'hv-lite-1.2.1';
 const FILES = [
   './', 'index.html', 'app.js', 'manifest.webmanifest',
   'src/color.js', 'src/features.js', 'src/quality.js', 'src/risk.js', 'src/personalizer.js',
@@ -9,7 +9,7 @@ const FILES = [
   'i18n/ru.json', 'i18n/kk.json', 'kb/ru.json', 'kb/kk.json', 'model/model.json',
   'styles/app.css', 'styles/print.css',
   'assets/icons/icon-192.png', 'assets/icons/icon-512.png', 'assets/icons/maskable-512.png',
-  'assets/howto/light.svg', 'assets/howto/lid.svg', 'assets/howto/oval.svg',
+  'assets/howto/light.svg', 'assets/howto/lid.svg', 'assets/howto/oval.svg', 'assets/howto/mark.svg',
 ];
 
 self.addEventListener('install', (e) => {

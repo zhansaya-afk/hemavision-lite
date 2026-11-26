@@ -1,7 +1,7 @@
 // Service worker: при установке кладёт все файлы приложения в кэш, дальше отвечает из кэша.
 // После первой загрузки приложение работает в режиме полёта. Никаких запросов на сторонние адреса.
 
-const VERSION = 'hv-lite-1.2.2';
+const VERSION = 'hv-lite-1.2.3';
 const FILES = [
   './', 'index.html', 'app.js', 'manifest.webmanifest',
   'src/color.js', 'src/features.js', 'src/quality.js', 'src/risk.js', 'src/personalizer.js',
@@ -13,7 +13,10 @@ const FILES = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
+  // cache: 'reload' — мимо HTTP-кэша браузера: иначе новая версия могла сохранить старые файлы
+  // (GitHub Pages отдаёт их с max-age=600) и показывать их до следующего обновления.
+  const fresh = FILES.map((f) => new Request(f, { cache: 'reload' }));
+  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(fresh)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {

@@ -174,3 +174,4 @@ details { margin: 8px 0; }
 .ask .btn { width: auto; margin: 0; flex: none; padding: 10px 12px; }
 .roi-guide img { display: block; width: 100%; max-width: 380px; height: auto; margin: 6px auto; border-radius: 10px; }
 .roi-guide p { margin: 4px 0; }
+.roi-guide summary { font-weight: 600; cursor: pointer; }
